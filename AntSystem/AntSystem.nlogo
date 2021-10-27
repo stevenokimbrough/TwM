@@ -1,6 +1,6 @@
-globals [ best-tour 
-          best-tour-cost 
-          ticks 
+globals [ best-tour
+          best-tour-cost
+          ;; sk ticks
           node-diameter ]
 
 breed [ edges edge ]
@@ -9,22 +9,26 @@ breed [ ants ant ]
 
 edges-own [ node-a
             node-b
-            cost 
+            cost
             pheromone ]
-            
+
 ants-own [ tour
            tour-cost ]
-        
+
 ;;;;;;;;;;;;;;;::::::;;;;;;;;;
 ;;; Setup/Reset Procedures ;;;
 ;;;;;;;;;;;;;;;;;;;;;::::::;;;
 
 to setup
-  clear-all
+  ;; (for this model to work with NetLogo's new plotting features,
+  ;; __clear-all-and-reset-ticks should be replaced with clear-all at
+  ;; the beginning of your setup procedure and reset-ticks at the end
+  ;; of the procedure.)
+  __clear-all-and-reset-ticks
   set node-diameter 1.5
   set-default-shape edges "line"
   set-default-shape nodes "circle"
-  
+
   setup-nodes
   setup-edges
   setup-ants
@@ -40,8 +44,8 @@ to setup-nodes
   ;; that goes outside of the edge of the world.
   let x-range n-values (max-pxcor - node-diameter / 2) [? + 1]
   let y-range n-values (max-pycor - node-diameter / 2) [? + 1]
-  
-  create-custom-nodes num-of-nodes [
+
+  create-nodes num-of-nodes [
     setxy one-of x-range one-of y-range
     set color yellow
     set size node-diameter
@@ -49,10 +53,11 @@ to setup-nodes
 end
 
 to setup-edges
-  let remaining-nodes values-from nodes [self]
+  ;; sk let remaining-nodes values-from nodes [self]
+  let remaining-nodes   [self] of nodes
   while [not empty? remaining-nodes] [
     let a first remaining-nodes
-    set remaining-nodes but-first remaining-nodes      
+    set remaining-nodes but-first remaining-nodes
     ask a [
       without-interruption [
         foreach remaining-nodes [
@@ -64,7 +69,7 @@ to setup-edges
             set node-b ?
             set cost ceiling calculate-distance a ?
             set pheromone random-float 0.1
-          ]  
+          ]
         ]
       ]
     ]
@@ -72,7 +77,7 @@ to setup-edges
 end
 
 to setup-ants
-  create-custom-ants num-of-ants [
+  create-ants num-of-ants [
     hide-turtle
     set tour []
     set tour-cost 0
@@ -85,12 +90,12 @@ to reset
   ask edges [die]
   setup-edges
   setup-ants
-  
+
   ;; Update the best tour
   set best-tour get-random-path
   set best-tour-cost get-tour-length best-tour
-  update-best-tour  
-  
+  update-best-tour
+
   ;; Clear all of the plots in the model and reset the number of ticks
   clear-all-plots
   set ticks 0
@@ -104,7 +109,7 @@ to go
   no-display
   ask ants [
     set tour get-as-path
-    set tour-cost get-tour-length tour 
+    set tour-cost get-tour-length tour
 
     if tour-cost < best-tour-cost [
       set best-tour tour
@@ -114,7 +119,7 @@ to go
   ]
 
   update-pheromone
-      
+
   set ticks (ticks + 1)
   do-plots
   display
@@ -134,7 +139,7 @@ to-report get-as-path
   let new-tour (list origin)
   let remaining-nodes values-from nodes with [self != origin] [self]
   let current-node origin
-  
+
   ;; Create the new path for the ant
   while [not empty? remaining-nodes] [
     let next-node choose-next-node current-node remaining-nodes
@@ -142,10 +147,10 @@ to-report get-as-path
     set remaining-nodes remove next-node remaining-nodes
     set current-node next-node
   ]
-  
+
   ;; Move the ant back to the origin
   set new-tour lput origin new-tour
-  
+
   report new-tour
 end
 
@@ -159,9 +164,9 @@ to-report calculate-probabilities [current-node remaining-nodes]
   let transition-probabilities []
   let denominator 0
   foreach remaining-nodes [
-    ask current-node [ 
-      let next-edge __edge-with ? 
-      let transition-probability (pheromone-of next-edge ^ alpha) * ((1 / cost-of next-edge) ^ beta)
+    ask current-node [
+      let next-edge __edge-with ?
+      let transition-probability ([pheromone] of next-edge ^ alpha) * ((1 / [cost] of next-edge) ^ beta)
       set transition-probabilities lput (list transition-probability ?) transition-probabilities
       set denominator (denominator + transition-probability)
     ]
@@ -176,7 +181,7 @@ to-report calculate-probabilities [current-node remaining-nodes]
 
   ;; Sort the probabilities
   set probabilities sort-by [first ?1 < first ?2] probabilities
-  
+
   ;; Normalize the probabilities
   let normalized-probabilities []
   let total 0
@@ -184,8 +189,8 @@ to-report calculate-probabilities [current-node remaining-nodes]
     set total (total + first ?)
     set normalized-probabilities lput (list total last ?) normalized-probabilities
   ]
-  
-  report normalized-probabilities  
+
+  report normalized-probabilities
 end
 
 to update-pheromone
@@ -193,13 +198,13 @@ to update-pheromone
   ask edges [
     set pheromone (pheromone * (1 - rho))
   ]
-  
-  ;; Add pheromone to the paths found by the ants 
+
+  ;; Add pheromone to the paths found by the ants
   ask ants [
     without-interruption [
       let pheromone-increment (100 / tour-cost)
       foreach get-tour-edges tour [
-        ask ? [ set pheromone (pheromone + pheromone-increment) ]    
+        ask ? [ set pheromone (pheromone + pheromone-increment) ]
       ]
     ]
   ]
@@ -219,7 +224,7 @@ end
 to do-plots
   set-current-plot "Best Tour Cost"
   plot best-tour-cost
-  
+
   set-current-plot "Tour Cost Distribution"
   set-plot-pen-interval 10
   histogram-from ants [tour-cost]
@@ -233,19 +238,19 @@ to-report get-tour-edges [tour-nodes]
   let xs but-last tour-nodes
   let ys but-first tour-nodes
   let tour-edges []
-  (foreach xs ys [ 
-    ask ?1 [ set tour-edges lput __edge-with ?2 tour-edges] 
+  (foreach xs ys [
+    ask ?1 [ set tour-edges lput __edge-with ?2 tour-edges]
   ])
   report tour-edges
 end
 
 to-report get-tour-length [tour-nodes]
-  report reduce [?1 + ?2] map [cost-of ?] get-tour-edges tour-nodes
+  report reduce [?1 + ?2] map [[cost] of ?] get-tour-edges tour-nodes
 end
 
 to-report calculate-distance [a b]
-  let diff-x xcor-of a - xcor-of b
-  let diff-y ycor-of a - ycor-of b
+  let diff-x [xcor] of a - [xcor] of b
+  let diff-y [ycor] of a - [ycor] of b
   report sqrt (diff-x ^ 2 + diff-y ^ 2)
 end
 @#$#@#$#@
@@ -270,14 +275,11 @@ GRAPHICS-WINDOW
 70
 0
 70
-
-CC-WINDOW
-5
-481
-954
-576
-Command Center
 0
+0
+1
+ticks
+30.0
 
 BUTTON
 10
@@ -290,8 +292,11 @@ NIL
 1
 T
 OBSERVER
-T
 NIL
+NIL
+NIL
+NIL
+1
 
 BUTTON
 125
@@ -304,28 +309,33 @@ T
 1
 T
 OBSERVER
-T
 NIL
+NIL
+NIL
+NIL
+1
 
 MONITOR
 706
 418
 771
-467
+463
 Best Tour
 best-tour-cost
 3
 1
+11
 
 MONITOR
 631
 417
 698
-466
+462
 Ticks
 ticks
 3
 1
+11
 
 PLOT
 630
@@ -341,6 +351,8 @@ Cost
 10.0
 true
 false
+"" ""
+PENS
 
 PLOT
 631
@@ -356,8 +368,9 @@ Number of Ants
 10.0
 true
 false
+"" ""
 PENS
-"default" 1.0 1 -16777216 true
+"default" 1.0 1 -16777216 true "" ""
 
 SLIDER
 10
@@ -372,6 +385,7 @@ alpha
 1
 1
 NIL
+HORIZONTAL
 
 SLIDER
 10
@@ -386,6 +400,7 @@ beta
 1
 1
 NIL
+HORIZONTAL
 
 SLIDER
 10
@@ -400,6 +415,7 @@ rho
 0.01
 1
 NIL
+HORIZONTAL
 
 SLIDER
 10
@@ -414,6 +430,7 @@ num-of-nodes
 1
 1
 NIL
+HORIZONTAL
 
 SLIDER
 10
@@ -428,6 +445,7 @@ num-of-ants
 1
 1
 NIL
+HORIZONTAL
 
 BUTTON
 68
@@ -442,45 +460,47 @@ T
 OBSERVER
 NIL
 NIL
+NIL
+NIL
+1
 
 @#$#@#$#@
-WHAT IS IT?
------------
+## sok 2021-10-27
+
+This is the incompletely successful conversion of Ant System.nlogo (written in NetLogo 3.1.4) that I downloaded from the community models of NetLogo. I have not manually altered any of the cod. This is what the automated conversion program from NetLogo 5.3.1 was able to do.
+
+## WHAT IS IT?
 
 This model is an implementation of the Ant System algorithm, as described in [1], that is being used to solve the Traveling Salesman Problem [2].
 
+## HOW IT WORKS
 
-HOW IT WORKS
-------------
-The Ant System algorithm can be used to find the shortest path in a graph by employing the same decentralized mechanism exploited by ant colonies foraging for food.  In the model, each agent (i.e., ant) constructs a tour in the graph by making a choice at each node as to which node will be visited next according to a probability associated with each node.  The probability of an ant choosing a specific node at any time is determined by the amount of pheromone and the cost (i.e., the distance from the current node i to the next node j, where node j has not yet been visited) associated with each edge.  
+The Ant System algorithm can be used to find the shortest path in a graph by employing the same decentralized mechanism exploited by ant colonies foraging for food.  In the model, each agent (i.e., ant) constructs a tour in the graph by making a choice at each node as to which node will be visited next according to a probability associated with each node.  The probability of an ant choosing a specific node at any time is determined by the amount of pheromone and the cost (i.e., the distance from the current node i to the next node j, where node j has not yet been visited) associated with each edge.
 
 The attributes in this model that can be adjusted to change the behavior of the algorithm are alpha, beta, and rho.  The alpha and beta values are used to determine the transition probability discussed above, where the values are used to adjust the relative influence of each edge's pheromone trail and path cost on the ant's decision.  A rho value is also associated with the algorithm and is used as an evaporation rate which allows the algorithm to "forget" tours which have proven to be less valuable.
 
-HOW TO USE IT
--------------
+## HOW TO USE IT
+
 Choose the number of nodes and ants that you wish to have in the simulation (for best results set the number of ants equal to the number of nodes in the graph).  Click the SETUP button to create a random graph, a new colony of ants, and draw an initial tour on the graph. Click the GO button to start the simulation.  The RESET button keeps the same graph that was generated by the SETUP operation, but it resets everything else in the algorithm (i.e., it destroys all ants and edges in the graph and clears all of the plots).  The RESET button allows the user to run several tests with the same graph for data gathering.
 
 The alpha slider controls the propensity of the ants to exploit paths with high amounts of pheromone on them.  The beta slider controls how greedy the ants are, i.e., the ant's to edges with the lowest cost.  The delta slider controls the evaporation rate of the pheromone in the graph where the higher the delta, the faster the pheromone evaporates.
 
+## THINGS TO NOTICE
 
-THINGS TO NOTICE
-----------------
 In the model, two plots are given to show how the algorithm is performing.  The "Best Tour Cost" plot shows the cost of the best tour found so far over the life of the current run.  The "Tour Cost Distribution" plot is a histrogram that shows how the ants are distributed throughout the solution space.  In this plot, the vertical axis is the number of ants and the horizontal axis is tour cost, where each bar has a range of 10 units.
 
+## THINGS TO TRY
 
-THINGS TO TRY
--------------
 According to [1], emperical evidence shows that the optimal settings for the algorithm are: alpha = 1, beta = 5, rho = 0.5.  Try adjusting each of these settings from the optimal and take notice of how they affect the performance of the algorithm.  Watch the "Best Tour Cost" plot to see if adjustments lead to a steadier march towards the best tour or perhaps they add up to a good initial search that settles quickly into a local optimum.  Study the "Tour Cost Distribution" plot to see if changes to the evaporation rate lead to stagnation?  Can you find more optimal settings than those that have been found through previous experimentation?
 
+## CREDITS
 
-CREDITS
-----------------------
-This model is an implementation of the Ant System algorithm from [1]. 
+This model is an implementation of the Ant System algorithm from [1].
 
 When refering to this model in academic publications, please use: Roach, Christopher (2007).  NetLogo Ant System model. Computer Vision and Bio-inspired Computing Laboratory, Florida Institute of Technology, Melbourne, FL.
 
-REFERENCES
-----------------------
+## REFERENCES
+
 [1] Dorigo, M., Maniezzo, V., and Colorni, A., The Ant System: Optimization by a colony of cooperating agents.  IEEE Transactions on Systems, Man, and Cybernetics Part B: Cybernetics, Vol. 26, No. 1. (1996), pp. 29-41. http://citeseer.ist.psu.edu/dorigo96ant.html
 
 [2] http://www.tsp.gatech.edu/
@@ -489,17 +509,6 @@ default
 true
 0
 Polygon -7500403 true true 150 5 40 250 150 205 260 250
-
-link
-true
-0
-Line -7500403 true 150 0 150 300
-
-link direction
-true
-0
-Line -7500403 true 150 150 30 225
-Line -7500403 true 150 150 270 225
 
 airplane
 true
@@ -662,6 +671,17 @@ true
 0
 Line -7500403 true 150 0 150 150
 
+link
+true
+0
+Line -7500403 true 150 0 150 300
+
+link direction
+true
+0
+Line -7500403 true 150 150 30 225
+Line -7500403 true 150 150 270 225
+
 pentagon
 false
 0
@@ -779,16 +799,31 @@ Polygon -7500403 true true 270 75 225 30 30 225 75 270
 Polygon -7500403 true true 30 75 75 30 270 225 225 270
 
 @#$#@#$#@
-NetLogo 3.1.4
+NetLogo 5.3.1
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
 <experiments>
-  <experiment name="experiment1" repetitions="1" runMetricsEveryTick="true">
+  <experiment name="experiment1" repetitions="1" runMetricsEveryStep="true">
     <setup>setup</setup>
     <go>go</go>
-    <timeLimit ticks="30"/>
+    <timeLimit steps="30"/>
     <metric>best-tour-cost</metric>
   </experiment>
 </experiments>
+@#$#@#$#@
+@#$#@#$#@
+default
+0.0
+-0.2 0 0.0 1.0
+0.0 1 1.0 0.0
+0.2 0 0.0 1.0
+link direction
+true
+0
+Line -7500403 true 150 150 90 180
+Line -7500403 true 150 150 210 180
+
+@#$#@#$#@
+0
 @#$#@#$#@
