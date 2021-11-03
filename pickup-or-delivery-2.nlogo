@@ -10,7 +10,10 @@ points-list ; list to hold the  who values of the mappoints in order
 
 breed [customers customer]
 breed [mappoints mappoint]
+breed [testpoints testpoint]
 undirected-link-breed [maplinks maplink]
+
+directed-link-breed [dtestlinks dtestlink]
 
 turtles-own [time-consumed starting-point]
 
@@ -159,15 +162,17 @@ to test-go
     ;[
     if not (my-rest = []) [
       ifelse patch-here = [patch-here] of my-next
-    [set my-next first my-rest
-    set my-rest but-first my-rest
-      if my-next != []
-        [face  [patch-here] of  my-next]]
+         [set my-next first my-rest
+          set my-rest but-first my-rest
+          if my-next != []
+             [face  [patch-here] of  my-next]
+             ;; probably should go forward here too
+         ]
 
 ;    if my-rest != []
 ;    [forward 1]
 
-        [forward 1
+        [forward 0.5
         set changes true]
     ]
 
@@ -197,80 +202,32 @@ to test-go
 
 end
 
-;to test
-;  ask turtle 1 [face min-one-of mappoints [distance myself]]
-;  ask turtle 1 [move-to min-one-of mappoints [distance myself]]
-;  let starting 0
-;  ask turtle 1 [set starting one-of mappoints-here]
-;  let dapath 0
-;  ask starting [set dapath nw:turtles-on-path-to one-of mappoints with [ID = 0]]
-;  show dapath
-;  ask turtle 1 [face item 1  dapath]
-;end
-;
-;to go-deliver
-;  ask turtle 0 [forward 1
-;    set color-here [pcolor] of patch-here
-;  if  color-here = green
-;  [set heading (heading + 90)]
-;  set customers-at-place count customers-here
-;
-;
-;  if customers-at-place > 0
-;  [repeat customers-at-place [set time-consumed (time-consumed + 8)]]
-;  set time-consumed (time-consumed + 1)
-;]
-;  if color-here = blue
-;  [stop]
-;  tick
-;end
-;
-;to go-pickup
-;  set changing false
-;  ask customers [
-;    ;; If you are at your cut-point, face home or the shopping center
-;    if patch-here = [cut-point] of self and outbound
-;    [face patch 0 0
-;      ]
-;    if patch-here = [cut-point] of self and not outbound
-;    [face my-home
-;      ]
-;;    ;; If this is the first step, then take it.
-;;    if patch-here = my-home and outbound
-;;    [
-;;    set started true]
-;;    ;; If you are home after starting, you are done
-;;    if patch-here = my-home and  not outbound
-;;    []
-;
-;    if patch-here = patch 0 0 [
-;      face [cut-point] of self
-;      set outbound false
-;
-;    ]
-;
-;    if ((patch-here = my-home and outbound) or (patch-here != my-home))
-;    [forward 1
-;     set time-consumed (time-consumed + 1)
-;      set changing true
-;    ]
-;
-;;    if (patch-here != my-home)
-;;    [forward 1
-;;    print "forward 2"]
-;  ]
-;
-;  tick
-;  if not changing [stop]
-;end
-;
-;
-;to-report patch-in-front
-;  ;; Takes place in a turtle environment
-;  if heading = 0 [report patch ([pxcor] of self) (([pycor] of self) + 1)]
-;  if heading = 90 [report patch (([pxcor] of self) + 1) (([pycor] of self))]
-;end
-;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;; Testing area  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+to one-way-test
+  ;; How does path-to work with directed arcs?
+  ;;clear-all-testpoints  doesn't work
+  create-testpoints 5
+  let testpointlist [who] of testpoints
+  print testpointlist
+  let indexlist n-values length testpointlist [i -> i]
+  print indexlist
+  print item 1 indexlist
+  set indexlist but-last indexlist
+  foreach indexlist [ i -> ask turtle item i testpointlist [create-dtestlink-to turtle item (i + 1)  testpointlist]
+  ask turtle item (i + 1) testpointlist [create-dtestlink-to turtle item i  testpointlist
+  ]
+  ]
+  ask turtle first testpointlist [show nw:path-to turtle last testpointlist]
+  ask turtle last testpointlist [show nw:path-to turtle first testpointlist]
+  let bob []
+  ask turtle first testpointlist [set bob nw:path-to turtle last testpointlist]
+  print bob
+  ask item 2 bob [die]
+  ask turtle first testpointlist [show nw:path-to turtle last testpointlist]
+end
 @#$#@#$#@
 GRAPHICS-WINDOW
 210
@@ -342,7 +299,7 @@ NumCustomers
 NumCustomers
 0
 100
-71.0
+13.0
 1
 1
 NIL
@@ -411,6 +368,23 @@ BUTTON
 428
 NIL
 test-go
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+22
+295
+85
+328
+test
+setup\none-way-test\nask testpoints [forward 9]
 NIL
 1
 T
